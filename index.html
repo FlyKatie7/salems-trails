@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON Data Manager</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f0f2f5;
+            color: #333;
+            padding: 5px; /* Reduced padding */
+            box-sizing: border-box;
+            position: relative; /* For positioning the load data button */
+        }
+        #app {
+            background-color: #fff;
+            padding: 15px; /* Reduced padding */
+            border-radius: 8px; /* Slightly smaller radius */
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 600px;
+            text-align: center;
+        }
+        h1 {
+            color: #333; /* Darker, more neutral for a "history quiz" feel */
+            margin-bottom: 20px;
+            font-weight: bold; /* Ensure title is bold */
+        }
+        /* Ensure #app flex settings are consolidated if they were split */
+        #app {
+            background-color: #fff;
+            padding: 15px; /* Reduced padding */
+            border-radius: 8px; /* Slightly smaller radius */
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 650px; /* Slightly wider to accommodate new layout */
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #image-container {
+            width: 80%;
+            max-width: 400px; /* Control max image width */
+            margin-bottom: 20px;
+            min-height: 150px; /* Reserve space for image */
+            display: flex; /* Kept for consistency if needed */
+            justify-content: center; /* Kept for consistency */
+            align-items: center; /* Kept for consistency */
+        }
+        #question-image {
+            max-width: 100%;
+            height: auto; /* Maintain aspect ratio */
+            max-height: 200px; 
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            border: 1px solid #ddd; /* Subtle border for image placeholder */
+        }
+        #question-container {
+            margin-top: 15px; /* Space between image and question */
+            margin-bottom: 15px; /* Space between question and answers */
+            min-height: 30px; /* Adjusted */
+        }
+        #question-text {
+            font-size: 1.3em; /* Slightly smaller for balance */
+            font-weight: 500;
+            color: #202124;
+        }
+        #mcq-answers-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr); /* Enforce 2x2 grid */
+            gap: 10px;
+            margin-bottom: 20px;
+            width: 100%;
+            max-width: 320px; /* Make the 2x2 block more compact */
+        }
+        .answer-button {
+            background-color: #f8f9fa; /* Lighter gray for options */
+            color: #3c4043; /* Darker text */
+            border: 1px solid #dadce0;
+            padding: 10px; /* Adjusted padding */
+            font-size: 0.9em; /* Smaller font for compact buttons */
+            border-radius: 6px; /* Slightly smaller radius */
+            cursor: pointer;
+            transition: background-color 0.2s ease, border-color 0.2s ease;
+            text-align: center; /* Center text as in sketch A, B, C, D */
+            min-height: 40px; 
+            display: flex;
+            align-items: center;
+            justify-content: center; /* Center text content */
+        }
+        .answer-button:hover {
+            background-color: #e8eaed;
+            border-color: #c6c8cc;
+        }
+        .answer-button.correct {
+            background-color: #e6f4ea; 
+            border-color: #1e8e3e;
+            color: #1e8e3e;
+            font-weight: bold;
+        }
+        .answer-button.incorrect {
+            background-color: #fce8e6; 
+            border-color: #d93025;
+            color: #d93025;
+        }
+        #feedback-text {
+            margin-top: 10px; /* Reduced margin */
+            margin-bottom: 15px;
+            font-size: 1em;
+            min-height: 1.4em; 
+        }
+        /* General button styles, moved and generalized */
+        .control-button {
+            padding: 10px 20px;
+            font-size: 1em;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            border: 1px solid #ccc;
+            min-width: 100px; /* Ensure buttons have some width */
+        }
+        .control-button:active {
+            transform: scale(0.98);
+        }
+        #action-button { /* Specific style for Play/Next button */
+            background-color: #1a73e8;
+            color: white;
+            border-color: #1a73e8;
+        }
+        #action-button:hover {
+            background-color: #1765c9;
+        }
+        #action-button:disabled {
+            background-color: #90b8e0;
+            border-color: #90b8e0;
+            cursor: not-allowed;
+        }
+        #load-pasted-data-button, #clear-data-button {
+            background-color: #f1f3f4;
+            color: #202124;
+            flex-shrink: 0; /* Prevent buttons from shrinking too much */
+        }
+        #load-pasted-data-button.ready-to-load { /* New style for when a file is selected */
+            background-color: #34a853; /* Green */
+            color: white;
+            border-color: #2c8c42;
+        }
+        #load-pasted-data-button.ready-to-load:hover {
+            background-color: #2e803e;
+        }
+        #load-pasted-data-button:hover, #clear-data-button:hover {
+            background-color: #e8eaed;
+        }
+        #play-action-wrapper { /* Container for the PLAY button */
+            margin-top: 20px;
+            margin-bottom: 25px; /* Space before data controls */
+            text-align: center;
+        }
+        /* Styles for the new Data Management Section */
+        #data-management-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start; /* Align items to the top of the flex line */
+            margin-top: 25px;
+            width: 100%;
+            gap: 15px; /* Gap between LOAD, JSON Area, CLEAR */
+        }
+        #json-input-area-wrapper {
+            flex-grow: 1;
+            border: 2px solid #555; /* More prominent border for the "box" */
+            padding: 15px;
+            border-radius: 8px;
+            background-color: #f9f9f9; /* Light background for the box */
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 10px; /* Space between elements inside the box */
+        }
+        #json-input-area-wrapper label {
+            display: block;
+            margin-bottom: 8px; /* Increased space below label */
+            font-weight: 600;   /* Bolder text */
+            color: #333;       /* Darker color for better contrast */
+            font-size: 1em;     /* Slightly larger font size */
+        }
+        #json-data-input {
+            width: calc(100% - 20px); /* Adjust for padding */
+            min-height: 60px;
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9em;
+        }
+        #json-data-input::placeholder {
+            color: #757575; /* A visible medium gray for placeholder text */
+            opacity: 1; /* Ensure placeholder is not transparent */
+        }
+        .data-load-separator {
+            margin: 8px 0;
+            font-size: 0.9em;
+            color: #5f6368;
+        }
+        #json-file-input {
+            font-family: inherit;
+            padding: 8px 10px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            background-color: white;
+            width: calc(100% - 22px); /* Adjust for padding */
+            box-sizing: border-box;
+            margin-bottom: 5px; /* Space for filename display */
+        }
+        #selected-file-name {
+            display: block;
+            font-size: 0.8em;
+            color: #5f6368;
+            margin-top: 2px;
+            min-height: 1em; /* Reserve space */
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 100%;
+        }
+        #data-load-status {
+            font-size: 0.9em;
+            min-height: 1.2em;
+            margin-top: 5px;
+        }
+        /* Info Icon / Message Area Styling */
+        #info-icon-container {
+            position: absolute;
+            bottom: 65px; /* Position above the load data button */
+            right: 20px;
+            z-index: 10; /* Ensure it's above other elements if needed */
+        }
+        #info-icon {
+            width: 30px;
+            height: 30px;
+            background-color: #6c757d; /* Bootstrap secondary color */
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: help;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: background-color 0.2s;
+        }
+        #info-icon:hover {
+            background-color: #5a6268;
+        }
+        #info-icon .tooltip-text {
+            visibility: hidden;
+            width: 220px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 8px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%; /* Position above the icon */
+            left: 50%;
+            margin-left: -110px; /* Half of width to center */
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.85em;
+            line-height: 1.3;
+        }
+        #info-icon:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+        /* Message area styling (if still used for success/error) */
+        #message-area {
+            /* This area might be repurposed or removed if tooltip handles all info */
+            margin-top: 10px;
+            min-height: 20px;
+            padding: 8px 10px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            text-align: center; /* Center align messages if they appear below canvas */
+            word-wrap: break-word;
+            line-height: 1.4;
+        }
+        #message-area.success-message { background-color: #e6f4ea; border-color: #b7e1c7; color: #155724; }
+        #message-area.error-message { background-color: #fce8e6; border-color: #f5c6cb; color: #721c24; }
+        .hidden {
+            display: none !important; /* Ensure hidden takes precedence */
+        }
+        /* Animation for fading in elements */
+        @keyframes fadeInElementAnimation {
+            from {
+                opacity: 0;
+                transform: translateY(5px); /* Slight upward movement */
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .fade-in-on-display {
+            animation: fadeInElementAnimation 0.4s ease-out forwards;
+        }
+        .pixelated-image {
+            filter: blur(5px) contrast(1.2) brightness(0.85); /* Enhanced pixelation: more blur, softer contrast */
+            transition: filter 0.5s ease-in-out; /* Refined: slightly longer and smoother transition for unpixelating */
+        }
+        #game-canvas {
+            width: 100%;
+            height: 65vh; /* Use a significant portion of viewport height */
+            min-height: 300px; /* Minimum height for smaller screens */
+            max-height: 700px; /* Maximum height to maintain aspect ratio on very tall screens */
+            background-color: #000;
+            margin-bottom: 20px;
+            border-radius: 0px;
+            display: block; /* Ensures proper block rendering behavior */
+            position: relative; /* Needed for absolute positioning of the loader */
+        }
+    /* Modal Styles */
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.6);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+    }
+    #modal-content {
+        background-color: #fff;
+        padding: 25px;
+        border-radius: 10px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        width: 90%;
+        max-width: 500px;
+        text-align: left; /* Align content to left within modal */
+        position: relative; /* For positioning close button */
+    }
+    #modal-content h2 {
+        margin-top: 0;
+        margin-bottom: 20px;
+        color: #333;
+        text-align: center;
+    }
+    #modal-content label { /* Style label inside modal explicitly if needed */
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #333;
+        font-size: 1em;
+    }
+    #modal-content #json-data-input { /* Style textarea inside modal */
+        width: calc(100% - 16px); /* Full width minus padding */
+        min-height: 100px;
+        margin-bottom: 15px; /* Add space before file input */
+    }
+    #modal-content #json-file-input {
+        display: block;
+        width: calc(100% - 16px); /* Consistent width with textarea */
+        padding: 8px;
+        margin-bottom: 5px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-family: inherit;
+    }
+    #modal-content #selected-file-name-modal {
+        font-size: 0.85em;
+        color: #555;
+        min-height: 1.2em; /* Reserve space */
+        text-align: left;
+    }
+    .modal-actions {
+        margin-top: 20px;
+        display: flex;
+        justify-content: flex-end; /* Align buttons to the right */
+        gap: 10px;
+    }
+    #close-modal-button {
+        position: absolute;
+        top: 10px;
+        right: 15px;
+        background: none;
+        border: none;
+        font-size: 1.8em;
+        cursor: pointer;
+        color: #888;
+    }
+    #close-modal-button:hover {
+        color: #333;
+    }
+    /* Loading Indicator Styles */
+    #loading-indicator {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 20px;
+        border-radius: 8px;
+        font-size: 1.2em;
+        z-index: 10; /* Ensure it's above the canvas but below modals */
+        text-align: center;
+    }
+    
+    /* Notification toast animations */
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translate(-50%, 20px);
+        }
+        to {
+            opacity: 1;
+            transform: translate(-50%, 0);
+        }
+    }
+    
+    @keyframes slideDown {
+        from {
+            opacity: 1;
+            transform: translate(-50%, 0);
+        }
+        to {
+            opacity: 0;
+            transform: translate(-50%, 20px);
+        }
+    }
+    </style>
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://esm.sh/three@0.158.0",
+            "three/addons/": "https://esm.sh/three@0.158.0/examples/jsm/",
+            "phaser": "https://esm.sh/phaser@3.70.0"
+        }
+    }
+    </script>
+</head>
+<body>
+    <div id="app">
+        <!-- <h1 id="game-title">Arcade Trivia Challenge</h1> --> <!-- Title removed -->
+        <div style="position: relative; width: 100%;"> <!-- Wrapper for canvas and loader -->
+            <canvas id="game-canvas" width="1280" height="720"></canvas> 
+            <div id="loading-indicator" class="hidden">Loading Resources...</div>
+        </div>
+        <!-- Data Management Section - LOAD DATA Button moved to bottom right -->
+        <!-- The #data-management-controls div might be removed or repurposed if only the button is moved -->
+        <button id="load-pasted-data-button" class="control-button" style="position: fixed; bottom: 20px; right: 20px; z-index: 100;">LOAD DATA</button>
+        <button id="toggle-chat-button" class="control-button" style="position: fixed; bottom: 20px; right: 130px; z-index: 100; background-color: #2c3e50; color: white;">SHOW CHAT</button>
+        
+        <!-- Info Icon with Tooltip (replaces the old message area for initial instruction) -->
+        <div id="info-icon-container">
+            <div id="info-icon">?
+                <span class="tooltip-text">Click "LOAD DATA" to input or paste JSON for the trivia cube.</span>
+            </div>
+        </div>
+        
+        <!-- This message-area is now primarily for success/error feedback from JSON loading -->
+        <p id="message-area" style="margin-top: 10px; text-align:center;"></p> 
+        <!-- Modal for JSON Data Input -->
+        <div id="data-loader-modal" class="modal-overlay hidden">
+            <div id="modal-content">
+                <button id="close-modal-button" title="Close">&times;</button>
+                <h2>Load JSON Data</h2>
+                <div id="json-input-area-wrapper"> <!-- This div is no longer hidden by default, modal controls visibility -->
+                    <label for="json-data-input">Paste JSON Data:</label>
+                    <textarea id="json-data-input" placeholder="Paste JSON array here..."></textarea>
+                    
+                    <label for="json-file-input" style="margin-top: 15px;">Or Load JSON File:</label>
+                    <input type="file" id="json-file-input" accept=".json">
+                    <span id="selected-file-name-modal">No file selected.</span>
+                </div>
+                <div class="modal-actions">
+                    <button id="copy-json-button" class="control-button" style="background-color: #ffc107; color: #212529;">COPY JSON</button>
+                    <button id="clear-data-button" class="control-button">CLEAR</button> <!-- This button is no longer hidden by default -->
+                    <button id="confirm-load-json-button" class="control-button" style="background-color: #34a853; color: white;">LOAD FROM TEXT</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Full-Screen Image Modal -->
+        <div id="fullscreen-image-modal" class="modal-overlay hidden" style="background-color: rgba(0, 0, 0, 0.9);">
+            <div style="position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
+                <img id="fullscreen-image" alt="Full Screen View" style="max-width: 95%; max-height: 95%; object-fit: contain; cursor: pointer;">
+                <button id="close-fullscreen-button" style="position: absolute; top: 20px; right: 30px; background: rgba(255,255,255,0.8); border: none; font-size: 2em; cursor: pointer; border-radius: 50%; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center;">&times;</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 3D TV Display Modal -->
+    <div id="tv-display-modal" class="modal-overlay hidden" style="background-color: rgba(0, 0, 0, 0.95);">
+        <div id="tv-container" style="
+            position: relative;
+            width: 90%;
+            max-width: 700px;
+            margin: auto;
+            perspective: 1000px;
+        ">
+            <button id="close-tv-button" style="
+                position: absolute;
+                top: -50px;
+                right: 0;
+                background-color: rgba(255, 255, 255, 0.9);
+                border: none;
+                color: #333;
+                font-size: 30px;
+                cursor: pointer;
+                border-radius: 50%;
+                width: 45px;
+                height: 45px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10;
+                box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+                transition: all 0.3s;
+            ">&times;</button>
+            
+            <div id="retro-tv" style="
+                background: linear-gradient(145deg, #8b7355, #6b5644);
+                border-radius: 20px;
+                padding: 40px 35px 50px 35px;
+                box-shadow: 
+                    0 20px 60px rgba(0, 0, 0, 0.6),
+                    inset 0 -5px 15px rgba(0, 0, 0, 0.3),
+                    inset 0 5px 10px rgba(255, 255, 255, 0.1);
+                transform: rotateY(0deg);
+                transition: transform 0.6s;
+                position: relative;
+            ">
+                <!-- TV Antenna -->
+                <div style="
+                    position: absolute;
+                    top: -40px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    width: 3px;
+                    height: 50px;
+                    background: linear-gradient(to bottom, #888, #555);
+                    border-radius: 2px;
+                ">
+                    <div style="
+                        position: absolute;
+                        top: 0;
+                        left: -20px;
+                        width: 40px;
+                        height: 2px;
+                        background: #666;
+                        transform: rotate(-25deg);
+                        border-radius: 1px;
+                    "></div>
+                    <div style="
+                        position: absolute;
+                        top: 0;
+                        right: -20px;
+                        width: 40px;
+                        height: 2px;
+                        background: #666;
+                        transform: rotate(25deg);
+                        border-radius: 1px;
+                    "></div>
+                </div>
+                
+                <!-- TV Screen Container -->
+                <div style="
+                    background: linear-gradient(145deg, #1a1a1a, #000);
+                    border-radius: 15px;
+                    padding: 15px;
+                    box-shadow: 
+                        inset 0 5px 15px rgba(0, 0, 0, 0.8),
+                        inset 0 -2px 10px rgba(255, 255, 255, 0.1);
+                    position: relative;
+                    overflow: hidden;
+                ">
+                    <!-- Screen Glass Effect -->
+                    <div style="
+                        position: absolute;
+                        top: 0;
+                        left: 0;
+                        right: 0;
+                        bottom: 0;
+                        background: linear-gradient(
+                            135deg,
+                            rgba(255, 255, 255, 0.1) 0%,
+                            transparent 50%,
+                            rgba(0, 0, 0, 0.2) 100%
+                        );
+                        pointer-events: none;
+                        z-index: 2;
+                    "></div>
+                    
+                    <!-- Image Display -->
+                    <img id="tv-screen-image" 
+                        src="https://play.rosebud.ai/assets/Elsinore-Theater.jpg?RTsi"
+                        alt="Elsinore Theater"
+                        style="
+                            width: 100%;
+                            height: auto;
+                            display: block;
+                            border-radius: 8px;
+                            position: relative;
+                            z-index: 1;
+                            box-shadow: 0 0 20px rgba(0, 200, 255, 0.3);
+                        "
+                    />
+                    
+                    <!-- Scanline Effect -->
+                    <div style="
+                        position: absolute;
+                        top: 0;
+                        left: 0;
+                        right: 0;
+                        bottom: 0;
+                        background: repeating-linear-gradient(
+                            0deg,
+                            rgba(0, 0, 0, 0.1) 0px,
+                            transparent 2px,
+                            transparent 4px
+                        );
+                        pointer-events: none;
+                        z-index: 3;
+                    "></div>
+                </div>
+                
+                <!-- TV Controls -->
+                <div style="
+                    display: flex;
+                    justify-content: center;
+                    gap: 30px;
+                    margin-top: 25px;
+                ">
+                    <!-- Volume Knob -->
+                    <div style="
+                        width: 50px;
+                        height: 50px;
+                        background: radial-gradient(circle, #444, #222);
+                        border-radius: 50%;
+                        box-shadow: 
+                            0 4px 8px rgba(0, 0, 0, 0.5),
+                            inset 0 2px 4px rgba(255, 255, 255, 0.1);
+                        position: relative;
+                    ">
+                        <div style="
+                            position: absolute;
+                            top: 50%;
+                            left: 50%;
+                            transform: translate(-50%, -50%);
+                            width: 3px;
+                            height: 20px;
+                            background: #888;
+                            border-radius: 2px;
+                        "></div>
+                    </div>
+                    
+                    <!-- Channel Knob -->
+                    <div style="
+                        width: 50px;
+                        height: 50px;
+                        background: radial-gradient(circle, #444, #222);
+                        border-radius: 50%;
+                        box-shadow: 
+                            0 4px 8px rgba(0, 0, 0, 0.5),
+                            inset 0 2px 4px rgba(255, 255, 255, 0.1);
+                        position: relative;
+                    ">
+                        <div style="
+                            position: absolute;
+                            top: 50%;
+                            left: 50%;
+                            transform: translate(-50%, -50%) rotate(45deg);
+                            width: 3px;
+                            height: 20px;
+                            background: #888;
+                            border-radius: 2px;
+                        "></div>
+                    </div>
+                </div>
+                
+                <!-- TV Brand Label -->
+                <div style="
+                    text-align: center;
+                    margin-top: 20px;
+                    font-family: 'Courier New', monospace;
+                    color: #d4af37;
+                    font-size: 14px;
+                    font-weight: bold;
+                    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+                    letter-spacing: 3px;
+                ">ELSINORE</div>
+            </div>
+        </div>
+    </div>
+<!-- Google Search Modal -->
+<div id="google-search-modal" class="modal-overlay hidden">
+    <div id="modal-content" style="max-width: 450px;">
+        <button id="close-search-modal-button" title="Close" style="
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 1.8em;
+            cursor: pointer;
+            color: #888;
+        ">&times;</button>
+        <h2 style="margin-top: 0; margin-bottom: 20px; color: #333; text-align: center;">🔍 Google Search</h2>
+        
+        <div style="margin-bottom: 20px;">
+            <label for="search-query-input" style="display: block; margin-bottom: 8px; font-weight: 600; color: #333; font-size: 1em;">
+                Enter your search query:
+            </label>
+            <input 
+                type="text" 
+                id="search-query-input" 
+                placeholder="Search Google..."
+                style="
+                    width: calc(100% - 24px);
+                    padding: 12px;
+                    font-size: 16px;
+                    border: 2px solid #ddd;
+                    border-radius: 6px;
+                    font-family: inherit;
+                    transition: border-color 0.2s;
+                "
+            />
+        </div>
+        
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+            <button id="cancel-search-button" class="control-button" style="background-color: #f1f3f4; color: #202124;">
+                CANCEL
+            </button>
+            <button id="submit-search-button" class="control-button" style="background-color: #1a73e8; color: white; border-color: #1a73e8;">
+                SEARCH
+            </button>
+        </div>
+    </div>
+</div>
+<!-- Connections Board Modal -->
+<div id="connections-board-modal" class="modal-overlay hidden">
+    <div style="
+        position: relative;
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        border-radius: 15px;
+        padding: 25px;
+        max-width: 750px;
+        width: 90%;
+        max-height: 85vh;
+        overflow-y: auto;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+    ">
+        <button id="close-connections-button" style="
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            border-radius: 50%;
+            width: 38px;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        ">&times;</button>
+        
+        <h2 style="
+            color: #4a90e2;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 26px;
+            text-shadow: 0 2px 10px rgba(74, 144, 226, 0.5);
+        ">🔗 Connections Board</h2>
+        
+        <p style="
+            color: #ecf0f1;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 14px;
+            opacity: 0.8;
+        ">Discover the people, places, and things in your trivia world</p>
+        
+        <!-- Category Tabs -->
+        <div id="connections-tabs" style="
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        ">
+            <button class="connection-tab active" data-category="all">ALL</button>
+            <button class="connection-tab" data-category="who">WHO</button>
+            <button class="connection-tab" data-category="what">WHAT</button>
+            <button class="connection-tab" data-category="where">WHERE</button>
+        </div>
+        
+        <!-- Connections Grid with SVG overlay -->
+        <div id="connections-grid" style="
+            position: relative;
+            min-height: 300px;
+            padding: 15px;
+        "></div>
+    </div>
+</div>
+<style>
+.connection-tab {
+    background: rgba(74, 144, 226, 0.2);
+    border: 2px solid rgba(74, 144, 226, 0.5);
+    color: #4a90e2;
+    padding: 8px 16px;
+    font-size: 12px;
+    font-weight: bold;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+.connection-tab:hover {
+    background: rgba(74, 144, 226, 0.3);
+    transform: translateY(-2px);
+}
+.connection-tab.active {
+    background: #4a90e2;
+    color: white;
+    border-color: #4a90e2;
+}
+.connection-chip {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    background: url('https://play.rosebud.ai/assets/cubefaceplate_chip_sg01.png?pbA2') center/cover;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 10px;
+}
+.connection-chip:hover {
+    transform: scale(1.1) translateY(-5px);
+    box-shadow: 0 8px 25px rgba(74, 144, 226, 0.6);
+}
+.connection-chip-label {
+    color: white;
+    font-size: 10px;
+    font-weight: bold;
+    text-shadow: 
+        0 2px 4px rgba(0, 0, 0, 0.8),
+        0 0 10px rgba(0, 0, 0, 0.5);
+    line-height: 1.1;
+    word-wrap: break-word;
+    max-width: 100%;
+}
+.connection-chip-category {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    font-size: 8px;
+    padding: 2px 6px;
+    border-radius: 8px;
+    font-weight: bold;
+}
+.connection-chip[data-category="who"] {
+    filter: hue-rotate(120deg);
+}
+.connection-chip[data-category="where"] {
+    filter: hue-rotate(240deg);
+}
+.connection-chip.locked {
+    opacity: 0.4;
+    filter: grayscale(100%) brightness(0.6);
+    cursor: not-allowed;
+}
+.connection-chip.locked:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+}
+.lock-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 24px;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8));
+}
+@keyframes dashFlow {
+    to {
+        stroke-dashoffset: -12;
+    }
+}
+@keyframes pulseGlow {
+    0%, 100% {
+        filter: drop-shadow(0 0 3px rgba(74, 144, 226, 0.6));
+    }
+    50% {
+        filter: drop-shadow(0 0 8px rgba(74, 144, 226, 1));
+    }
+}
+.connection-line {
+    animation: dashFlow 2s linear infinite, pulseGlow 3s ease-in-out infinite;
+}
+@keyframes webGrowth {
+    0% {
+        stroke-dashoffset: var(--path-length, 300);
+        opacity: 0;
+    }
+    10% {
+        opacity: 1;
+    }
+    100% {
+        stroke-dashoffset: 0;
+        opacity: 1;
+    }
+}
+@keyframes glowPulse {
+    0%, 100% {
+        filter: drop-shadow(0 0 5px rgba(46, 204, 113, 0.6));
+    }
+    50% {
+        filter: drop-shadow(0 0 15px rgba(46, 204, 113, 1));
+    }
+}
+.connection-chip.newly-unlocked {
+    animation: chipUnlockPulse 1s ease-out;
+}
+@keyframes chipUnlockPulse {
+    0% {
+        transform: scale(0.8);
+        opacity: 0;
+        box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.7);
+    }
+    50% {
+        transform: scale(1.2);
+        box-shadow: 0 0 20px 10px rgba(46, 204, 113, 0.4);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    }
+}
+@keyframes chipBurstPulse {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    }
+    50% {
+        transform: scale(1.15);
+        box-shadow: 0 0 30px 15px rgba(46, 204, 113, 0.6);
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    }
+}
+.connection-particle {
+    animation: particlePulse 0.5s ease-in-out infinite;
+}
+@keyframes particlePulse {
+    0%, 100% {
+        r: 4px;
+    }
+    50% {
+        r: 6px;
+    }
+}
+</style>
+<!-- Player Stats Modal -->
+<div id="player-stats-modal" class="modal-overlay hidden" style="background-color: rgba(0, 0, 0, 0.9);">
+    <div style="
+        position: relative;
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        border-radius: 15px;
+        padding: 30px;
+        max-width: 500px;
+        width: 90%;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+    ">
+        <button id="close-stats-button" style="
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            border-radius: 50%;
+            width: 38px;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        ">&times;</button>
+        
+        <div id="stats-content">
+            <!-- Stats will be dynamically populated here -->
+        </div>
+    </div>
+</div>
+<!-- Trivia Question Modal -->
+<div id="trivia-modal" class="modal-overlay hidden" style="background-color: rgba(0, 0, 0, 0.9);">
+    <div id="trivia-content" style="
+        position: relative;
+        background-color: #2c3e50;
+        border-radius: 15px;
+        padding: 30px;
+        max-width: 600px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        margin: auto;
+    ">
+        <button id="close-trivia-button" style="
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: #ecf0f1;
+            font-size: 30px;
+            cursor: pointer;
+            transition: color 0.3s;
+        ">&times;</button>
+        
+        <div id="trivia-question" style="
+            color: #ecf0f1;
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 30px;
+            text-align: center;
+            line-height: 1.4;
+        "></div>
+        
+        <div id="trivia-answers" style="
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        "></div>
+    </div>
+</div>
+
+    <!-- Cube Face Tooltip -->
+    <div id="cube-face-tooltip" style="
+        position: fixed;
+        background: rgba(0, 0, 0, 0.9);
+        color: white;
+        padding: 10px 15px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        pointer-events: none;
+        z-index: 9998;
+        display: none;
+        max-width: 250px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+        border: 1px solid rgba(74, 144, 226, 0.5);
+        backdrop-filter: blur(10px);
+    "></div>
+    <script type="module" src="main.js"></script>
+    <script type="module" src="game.js"></script>
+</body>
+</html>
