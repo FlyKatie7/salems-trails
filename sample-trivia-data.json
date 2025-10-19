@@ -1,0 +1,13 @@
+{
+  "question": "Which historic landmark in Paris, known for its iron lattice structure, was the main exhibit of the 1889 World's Fair?",
+  "historicalImage": "https://play.rosebud.ai/assets/Breyman_Boise_house_demolished (1).jpg?havF",
+  "currentImage": "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1024&q=80",
+  "options": {
+    "A": "The Louvre Museum",
+    "B": "Notre-Dame Cathedral",
+    "C": "The Eiffel Tower",
+    "D": "The Arc de Triomphe"
+  },
+  "correctAnswerKey": "C",
+  "answerDetails": "The Eiffel Tower, designed by Gustave Eiffel, served as the entrance arch to the 1889 Exposition Universelle (World's Fair) and has since become a global icon of France."
+}
