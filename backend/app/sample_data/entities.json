@@ -1,0 +1,14 @@
+[
+  {
+    "id": 1,
+    "name": "Jason Lee",
+    "type": "person",
+    "era_hint_year": 1836
+  },
+  {
+    "id": 2,
+    "name": "Mission Mill",
+    "type": "place",
+    "era_hint_year": 1841
+  }
+]

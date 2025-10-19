@@ -1,0 +1,152 @@
+nano index.html
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Salem's Trails – Dev</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root{
+      --bg:#0b0b0f; --fg:#eaeaea;
+      --chip-beacon:#FFD600; /* universal yellow */
+      --card:#13131a; --muted:#9aa0a6;
+      --trail-water:#00E5FF; /* grid color example for era banner */
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,Arial,sans-serif}
+    header{padding:20px 24px;border-bottom:1px solid #1e1e29;background:linear-gradient(180deg,#0f0f16,#0b0b0f)}
+    .era-title{font-size:24px;font-weight:700;letter-spacing:.3px}
+    .era-sub{opacity:.8}
+    .era-pill{display:inline-flex;gap:10px;align-items:center;background:#0f1419;border:1px solid #182027;border-radius:999px;padding:8px 14px;margin-top:8px}
+    .era-dot{width:10px;height:10px;border-radius:50%;background:var(--trail-water);box-shadow:0 0 12px var(--trail-water)}
+    main{padding:20px 24px}
+    .board{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px}
+    .card{background:var(--card);border:1px solid #1b1b25;border-radius:14px;padding:14px;min-height:130px;position:relative;overflow:hidden}
+    .card h3{margin:0 0 8px 0;font-size:16px}
+    .muted{color:var(--muted);font-size:12px}
+
+    /* CHIP styles */
+    .chip{position:relative;display:inline-block;will-change:filter,transform,opacity}
+    .chip img{width:56px;height:56px;border-radius:50%;display:block}
+    .chip.locked{filter:grayscale(1);opacity:.45;transform:scale(.92)}
+    .chip.claimed::after{
+      content:'';position:absolute;inset:-6px;border-radius:9999px;
+      box-shadow:0 0 14px 3px var(--chip-beacon);
+      animation:chipBeacon 1.8s ease-in-out infinite;pointer-events:none;
+    }
+    .chip.newly-unlocked::before{
+      content:'';position:absolute;inset:-2px;border:2px solid var(--chip-beacon);border-radius:9999px;
+      animation:chipBurst 600ms ease-out forwards;pointer-events:none;
+    }
+    @keyframes chipBeacon{0%{opacity:.55;transform:scale(.94)}50%{opacity:1;transform:scale(1.05)}100%{opacity:.55;transform:scale(.94)}}
+    @keyframes chipBurst{0%{opacity:1;transform:scale(.8)}100%{opacity:0;transform:scale(1.6)}}
+
+    .row{display:flex;align-items:center;gap:12px}
+    .actions{margin-top:10px;display:flex;gap:8px}
+    button{background:#1d2730;border:1px solid #20303a;color:#eaeaea;border-radius:10px;padding:8px 10px;cursor:pointer}
+    button:hover{filter:brightness(1.1)}
+    .grid-banner{margin-top:12px;padding:10px;border:1px dashed #20303a;border-radius:10px;font-size:12px}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="era-title" id="eraTitle">Trail of Currents</div>
+    <div class="era-sub" id="eraSub"><em>The Riverbound Dawn (1825–1869)</em></div>
+    <div class="era-pill"><span class="era-dot"></span><span id="eraColorLabel">Teal-Cyan Grid</span></div>
+  </header>
+
+  <main>
+    <div class="grid-banner">Era color drives the glowing grid. Chip beacon is always bright yellow.</div>
+    <h2 style="margin:16px 0 8px">Connections Board (demo)</h2>
+    <div id="board" class="board"></div>
+  </main>
+
+  <script src="./game.js"></script>
+  <script>
+  // Minimal demo data (mirrors your backend samples)
+  const DEMO_ENTITIES = [
+    { id: 1, name: 'Jason Lee',      type: 'person', img: 'https://placehold.co/112x112?text=JL' },
+    { id: 2, name: 'Mission Mill',   type: 'place',  img: 'https://placehold.co/112x112?text=MM' }
+  ];
+  const unlockedEntities = new Set(JSON.parse(localStorage.getItem('unlockedEntities') || '[]'));
+
+  function saveUnlocks(){
+    localStorage.setItem('unlockedEntities', JSON.stringify([...unlockedEntities]));
+  }
+
+  function applyChipStateClasses(chipEl, entityId, { isNewlyUnlocked=false }={}){
+    const isUnlocked = unlockedEntities.has(entityId);
+    chipEl.classList.toggle('locked', !isUnlocked);
+    chipEl.classList.toggle('claimed', !!isUnlocked);
+    if (isUnlocked && isNewlyUnlocked){
+      chipEl.classList.add('newly-unlocked');
+      setTimeout(()=>chipEl.classList.remove('newly-unlocked'), 700);
+    }
+  }
+
+  function renderBoard(){
+    const mount = document.getElementById('board');
+    mount.innerHTML = '';
+    DEMO_ENTITIES.forEach(entity=>{
+      const card = document.createElement('div');
+      card.className = 'card';
+
+      const row = document.createElement('div');
+      row.className = 'row';
+
+      const chip = document.createElement('div');
+      chip.className = 'chip';
+      chip.dataset.entityId = String(entity.id);
+      chip.innerHTML = `<img alt="${entity.name}" src="${entity.img}">`;
+      applyChipStateClasses(chip, entity.id);
+
+      const info = document.createElement('div');
+      info.innerHTML = `<h3>${entity.name}</h3><div class="muted">${entity.type}</div>`;
+
+      row.appendChild(chip);
+      row.appendChild(info);
+      card.appendChild(row);
+
+      const actions = document.createElement('div');
+      actions.className = 'actions';
+      const btnUnlock = document.createElement('button');
+      btnUnlock.textContent = 'Unlock';
+      btnUnlock.onclick = ()=>{
+        const newly = !unlockedEntities.has(entity.id);
+        unlockedEntities.add(entity.id); saveUnlocks();
+        applyChipStateClasses(chip, entity.id, { isNewlyUnlocked:newly });
+        window.triggerWebGrowthAnimation?.(entity.id);
+      };
+
+      const btnLock = document.createElement('button');
+      btnLock.textContent = 'Lock';
+      btnLock.onclick = ()=>{
+        unlockedEntities.delete(entity.id); saveUnlocks();
+        applyChipStateClasses(chip, entity.id);
+      };
+
+      actions.appendChild(btnUnlock);
+      actions.appendChild(btnLock);
+      card.appendChild(actions);
+
+      mount.appendChild(card);
+    });
+  }
+
+  // era banner wiring (when coming from backend)
+  window.setEraBanner = (era)=>{
+    if(!era) return;
+    document.getElementById('eraTitle').textContent = era.name || 'Trail';
+    document.getElementById('eraSub').innerHTML = `<em>${era.subtitle} (${era.start}–${era.end})</em>`;
+    document.querySelector('.era-dot').style.background = era.color;
+    document.querySelector('.era-dot').style.boxShadow = `0 0 12px ${era.color}`;
+    document.getElementById('eraColorLabel').textContent = `${era.color} grid`;
+  };
+
+  // init
+  renderBoard();
+  </script>
+</body>
+</html>
+
