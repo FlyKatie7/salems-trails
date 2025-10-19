@@ -1394,6 +1394,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const zoomOutButton = document.getElementById('tv-zoom-out');
     const zoomInButton = document.getElementById('tv-zoom-in');
     const zoomDisplay = document.getElementById('tv-zoom-display');
+    const tvChannelButton = document.getElementById('tv-channel-button');
     
     if (tvContainer && zoomOutButton && zoomInButton && zoomDisplay) {
         const baseMaxWidth = parseInt(tvContainer.dataset.baseMaxWidth || '520', 10);
@@ -1446,6 +1447,47 @@ document.addEventListener('DOMContentLoaded', () => {
     if (tvScreenImage) {
         tvScreenImage.style.cursor = 'pointer';
         tvScreenImage.title = 'Click to close';
+    }
+    
+    if (tvScreenImage && tvChannelButton) {
+        try {
+            const channels = [
+                {
+                    src: 'https://play.rosebud.ai/assets/Elsinore-Theater.jpg?RTsi',
+                    alt: 'Elsinore Theater - Vintage Photo',
+                },
+                {
+                    src: 'https://upload.wikimedia.org/wikipedia/commons/1/1a/Elsinore_Theatre_Salem_Oregon.JPG',
+                    alt: 'Elsinore Theatre in Salem, Oregon',
+                },
+            ];
+            
+            const initialSrc = tvScreenImage.getAttribute('src') || tvScreenImage.src || '';
+            let currentChannelIndex = channels.findIndex((channel) => initialSrc.includes(channel.src));
+            if (currentChannelIndex === -1) {
+                currentChannelIndex = 0;
+                tvScreenImage.src = channels[currentChannelIndex].src;
+                tvScreenImage.alt = channels[currentChannelIndex].alt;
+            }
+            
+            const applyChannel = (index) => {
+                const channel = channels[index];
+                tvScreenImage.src = channel.src;
+                tvScreenImage.alt = channel.alt;
+                tvChannelButton.textContent = `CHANNEL ${index + 1}`;
+            };
+            
+            applyChannel(currentChannelIndex);
+            
+            tvChannelButton.addEventListener('click', (event) => {
+                event.stopPropagation();
+                currentChannelIndex = (currentChannelIndex + 1) % channels.length;
+                applyChannel(currentChannelIndex);
+                showNotification('📺 Channel changed', 'info');
+            });
+        } catch (error) {
+            console.error('[Game.js] TV channel controls failed to initialize:', error);
+        }
     }
     
     // ESC key to close modals
