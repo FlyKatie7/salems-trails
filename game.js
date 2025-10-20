@@ -1388,50 +1388,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // Click on TV or image to close the modal
-    const tvContainer = document.getElementById('tv-container');
     const retroTv = document.getElementById('retro-tv');
     const tvScreenImage = document.getElementById('tv-screen-image');
-    const zoomOutButton = document.getElementById('tv-zoom-out');
-    const zoomInButton = document.getElementById('tv-zoom-in');
-    const zoomDisplay = document.getElementById('tv-zoom-display');
     const tvChannelButton = document.getElementById('tv-channel-button');
-    
-    if (tvContainer && zoomOutButton && zoomInButton && zoomDisplay) {
-        const baseMaxWidth = parseInt(tvContainer.dataset.baseMaxWidth || '520', 10);
-        const minZoom = 0.6;
-        const maxZoom = 1.3;
-        const zoomStep = 0.1;
-        let currentZoom = parseFloat(tvContainer.dataset.initialZoom || '0.8');
-        
-        const clampZoom = (value) => Math.min(Math.max(value, minZoom), maxZoom);
-        
-        const applyZoom = () => {
-            currentZoom = parseFloat(clampZoom(currentZoom).toFixed(2));
-            const newMaxWidth = Math.round(baseMaxWidth * currentZoom);
-            tvContainer.style.maxWidth = `${newMaxWidth}px`;
-            zoomDisplay.textContent = `Zoom: ${Math.round(currentZoom * 100)}%`;
-            
-            const disableButton = (button, disabled) => {
-                button.disabled = disabled;
-                button.style.opacity = disabled ? '0.45' : '1';
-                button.style.cursor = disabled ? 'not-allowed' : 'pointer';
-            };
-            
-            disableButton(zoomOutButton, currentZoom <= minZoom);
-            disableButton(zoomInButton, currentZoom >= maxZoom);
-        };
-        
-        applyZoom();
-        
-        const createZoomHandler = (delta) => (event) => {
-            event.stopPropagation();
-            currentZoom = parseFloat((currentZoom + delta).toFixed(2));
-            applyZoom();
-        };
-        
-        zoomOutButton.addEventListener('click', createZoomHandler(-zoomStep));
-        zoomInButton.addEventListener('click', createZoomHandler(zoomStep));
-    }
     
     if (retroTv) {
         retroTv.style.cursor = 'pointer';
